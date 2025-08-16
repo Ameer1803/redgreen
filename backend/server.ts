@@ -41,22 +41,44 @@ function endRound() {
   setTimeout(startNewRound, 100);
 }
 
+interface Player {
+  name: string;
+  position: number;
+}
+
+const players: Record<string, Player> = {};
+
 io.on("connection", (socket) => {
   console.log("Player connected:", socket.id);
+
+  // Default until we get their real name
+  players[socket.id] = { name: "Anonymous", position: 0 };
 
   // Send current round info to new player
   socket.emit("welcome", {
     roundActive,
     roundEndTime,
     gameLight,
+    players,
   });
 
-  socket.on("playerUpdate", (data) => {
-    // later: save to DB
-    console.log("Update from player:", socket.id, data);
+  // Handle name set
+  socket.on("setName", (name: string) => {
+    players[socket.id].name = name;
+    io.emit("playersUpdate", players);
+  });
+
+  // Handle position updates
+  socket.on("playerUpdate", (data: { position: number }) => {
+    if (players[socket.id]) {
+      players[socket.id].position = data.position;
+      io.emit("playersUpdate", players);
+    }
   });
 
   socket.on("disconnect", () => {
+    delete players[socket.id];
+    io.emit("playersUpdate", players);
     console.log("Player disconnected:", socket.id);
   });
 });
