@@ -52,26 +52,24 @@ export async function initGestureDetector(
     const videoHeight = video.videoHeight;
     canvas.width = videoWidth;
     canvas.height = videoHeight;
-    if (ctx) {
-      ctx.save();
-      ctx.clearRect(0, 0, videoWidth, videoHeight);
-      const drawingUtils = new DrawingUtils(ctx);
+    ctx.save();
+    ctx.clearRect(0, 0, videoWidth, videoHeight);
+    const drawingUtils = new DrawingUtils(ctx);
 
-      if (results.landmarks) {
-        for (const landmarks of results.landmarks) {
-          drawingUtils.drawConnectors(
-            landmarks,
-            GestureRecognizer.HAND_CONNECTIONS,
-            { color: "#00FF00", lineWidth: 5 }
-          );
-          drawingUtils.drawLandmarks(landmarks, {
-            color: "#FF0000",
-            lineWidth: 2
-          });
-        }
+    if (results.landmarks) {
+      for (const landmarks of results.landmarks) {
+        drawingUtils.drawConnectors(
+          landmarks,
+          GestureRecognizer.HAND_CONNECTIONS,
+          { color: "#00FF00", lineWidth: 5 }
+        );
+        drawingUtils.drawLandmarks(landmarks, {
+          color: "#FF0000",
+          lineWidth: 2
+        });
       }
-      ctx.restore();
     }
+    ctx.restore();
 
     if (results.gestures && results.gestures.length > 0) {
       const gesture = results.gestures[0][0].categoryName;
