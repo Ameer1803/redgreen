@@ -16,11 +16,11 @@ let lightTimeout: NodeJS.Timeout | null = null;
 
 function startNewRound() {
   roundActive = true;
-roundEndTime = Date.now() + 90_000; // 1 minute 30 seconds from now
+roundEndTime = Date.now() + 60_000; // 1 minute 30 seconds from now
   io.emit("roundStarted", { roundEndTime });
 
   scheduleNextLight();
-  setTimeout(endRound, 90_000);
+  setTimeout(endRound, 60_000);
 }
 
 function scheduleNextLight() {
@@ -59,8 +59,7 @@ io.on("connection", (socket) => {
     roundActive,
     roundEndTime,
     gameLight,
-    players,
-    leaderboard,
+    players
   });
 
   // Handle name set
@@ -83,10 +82,6 @@ io.on("connection", (socket) => {
     console.log("Player disconnected:", socket.id);
   });
 
-  socket.on("playerFinished", (data: { name: string; time: number }) => {
-    updateLeaderboard(data.name, data.time);
-    io.emit("leaderboardUpdate", leaderboard);
-  });
 });
 
 // Start first round when server boots
@@ -96,15 +91,3 @@ server.listen(3000, () => {
   console.log("Game server running on port 3000");
 });
 
-interface LeaderboardEntry {
-  name: string;
-  time: number; // in ms
-}
-
-const leaderboard: LeaderboardEntry[] = [];
-
-function updateLeaderboard(name: string, time: number) {
-  leaderboard.push({ name, time });
-  leaderboard.sort((a, b) => a.time - b.time); // fastest first
-  if (leaderboard.length > 5) leaderboard.length = 5;
-}

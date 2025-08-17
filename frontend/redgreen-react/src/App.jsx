@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { initGestureDetector, stopGestureDetector } from "../mediapipe/detect";
-import { useGameSocket } from "../socket/gamesocket";
+import { useGameSocket } from "../connect/gamesocket";
 import WelcomeOverlay from "./components/welcome";
 import TrackSection from "./components/track";
+import { saveScore, getTop5 } from "../connect/supabaseClient";
 
 export default function App() {
 
@@ -16,12 +17,12 @@ export default function App() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [startTime, setStartTime] = useState(Date.now());
   const [playerName, setPlayerName] = useState(localStorage.getItem("playerName") || "");
+  const [leaderboard, setLeaderboard] = useState([]);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  const { socket, gameLight: serverGameLight, roundEndTime, players, leaderboard } = useGameSocket();
-  const gameLight = serverGameLight;
+  const { socket, gameLight, roundEndTime, players } = useGameSocket();
 
     //video feed
     useEffect(() => {
@@ -93,7 +94,9 @@ export default function App() {
             setFinished(true);
             const finishTime = Date.now() - startTime;
             if (socket && playerName) {
-              socket.emit("playerFinished", { name: playerName, time: finishTime });
+               saveScore(playerName, finishTime).then(() => {
+              getTop5().then(setLeaderboard);
+               });
             }
           }
           return nextPos;
@@ -110,6 +113,8 @@ export default function App() {
     setFinished(false);
     setWalking(false);
     setStartTime(Date.now());
+
+    getTop5().then(setLeaderboard);
   }, [roundEndTime]);
 
   // Send position to backend when it changes
@@ -155,8 +160,8 @@ export default function App() {
                 {leaderboard.map((entry, idx) => (
                   <li key={idx}>
                     <span className="finisher-no">{idx + 1}</span>
-                    <span className="finisher-name">{entry.name}</span>
-                    <span className="finisher-time">{(entry.time / 1000).toFixed(2)} s</span>
+                    <span className="finisher-name">{entry.player_name}</span>
+                    <span className="finisher-time">{(entry.time_ms / 1000).toFixed(2)} s</span>
                   </li>
                 ))}
               </ul>
