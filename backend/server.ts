@@ -16,11 +16,11 @@ let lightTimeout: NodeJS.Timeout | null = null;
 
 function startNewRound() {
   roundActive = true;
-  roundEndTime = Date.now() + 60_000; // 1 minute from now
+roundEndTime = Date.now() + 90_000; // 1 minute 30 seconds from now
   io.emit("roundStarted", { roundEndTime });
 
   scheduleNextLight();
-  setTimeout(endRound, 60_000);
+  setTimeout(endRound, 90_000);
 }
 
 function scheduleNextLight() {

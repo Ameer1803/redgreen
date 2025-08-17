@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 interface LeaderboardEntry {
   name: string;
-  time: number; // in milliseconds
+  time: number; 
 }
 
 export function useGameSocket() {

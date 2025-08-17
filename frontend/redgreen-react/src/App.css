@@ -88,6 +88,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-san
   opacity: 0.35;
 }
 
+.player-wrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
 /* player dots */
 .player {
   position: absolute;
@@ -97,12 +105,25 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-san
   background: var(--accent);
   border-radius: 999px;
   box-shadow: 0 0 0 2px rgba(122,162,255,.25);
+  z-index: 2;
 }
 .player.other {
+  position: absolute;
+  overflow: hidden;
   width: 12px; height: 12px;
   background: #6ee7b7;
   box-shadow: none;
   top: calc(50% + var(--offset, 0px));
+  border-radius: 50%;
+}
+
+.player-name {
+  font-size: 0.7em;
+  color: rgba(222, 236, 222, 1);
+  margin-top: 22px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000;
+  line-height: 1;
 }
 
 /* Right panel */
@@ -287,6 +308,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-san
 }
 
 /* Finishers */
+
+.finishers{
+  min-height: 200px;
+}
+
 .finishers h3 {
   margin: 0 0 20px 0;
   text-align: center;
@@ -341,27 +367,27 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-san
   .io-panel { grid-template-columns: 1fr; }
 }
 
-.app-green .io-panel,
-.app-green .cam,
-.app-green .container,
-.app-green .track,
-.app-green .mediapipe-section,
-.app-green .side,
-.app-green .light-card,
-.app-green .timer,
-.app-green .finishers {
+.app-GREEN .io-panel,
+.app-GREEN .cam,
+.app-GREEN .container,
+.app-GREEN .track,
+.app-GREEN .mediapipe-section,
+.app-GREEN .side,
+.app-GREEN .light-card,
+.app-GREEN .timer,
+.app-GREEN .finishers {
   box-shadow: 0 0 32px 0 var(--green), 0 0 8px 2px var(--green);
 }
 
-.app-red .io-panel,
-.app-red .cam,
-.app-red .container,
-.app-red .track,
-.app-red .mediapipe-section,
-.app-red .side,
-.app-red .light-card,
-.app-red .timer,
-.app-red .finishers {
+.app-RED .io-panel,
+.app-RED .cam,
+.app-RED .container,
+.app-RED .track,
+.app-RED .mediapipe-section,
+.app-RED .side,
+.app-RED .light-card,
+.app-RED .timer,
+.app-RED .finishers {
   box-shadow: 0 0 32px 0 var(--red), 0 0 8px 2px var(--red);
 }
 
