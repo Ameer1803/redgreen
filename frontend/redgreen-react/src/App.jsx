@@ -1,28 +1,63 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./App.css";
-import { initGestureDetector, stopGestureDetector } from "../mediapipe/detect";
-import { useGameSocket } from "../connect/gamesocket";
-import WelcomeOverlay from "./components/welcome";
-import TrackSection from "./components/track";
-import { saveScore, getTop5 } from "../connect/supabaseClient";
+  import "./App.css";
+  import { initGestureDetector, stopGestureDetector } from "../mediapipe/detect";
+  import { useGameSocket } from "../connect/gamesocket";
+  import WelcomeOverlay from "./components/welcome";
+  import TrackSection from "./components/track";
+  import { saveScore, getTop5 } from "../connect/supabaseClient";
 
-export default function App() {
+  export default function App() {
+    // --- NEW: State for tracking connection status ---
+    const [isLoading, setIsLoading] = useState(true);
 
-  const [walking, setWalking] = useState(false);
-  const [pos, setPos] = useState(0);
-  const [confidence, setConfidence] = useState("0.0");
-  const [timeLeft, setTimeLeft] = useState("0:00");
-  const [gameOver, setGameOver] = useState(false);
-  const [finished, setFinished] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [startTime, setStartTime] = useState(Date.now());
-  const [playerName, setPlayerName] = useState(localStorage.getItem("playerName") || "");
-  const [leaderboard, setLeaderboard] = useState([]);
+    const [walking, setWalking] = useState(false);
+    const [pos, setPos] = useState(0);
+    const [confidence, setConfidence] = useState("0.0");
+    const [timeLeft, setTimeLeft] = useState("0:00");
+    const [gameOver, setGameOver] = useState(false);
+    const [finished, setFinished] = useState(false);
+    const [showWelcome, setShowWelcome] = useState(true);
+    const [startTime, setStartTime] = useState(Date.now());
+    const [playerName, setPlayerName] = useState(localStorage.getItem("playerName") || "");
+    const [leaderboard, setLeaderboard] = useState([]);
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
 
-  const { socket, gameLight, roundEndTime, players } = useGameSocket();
+    const { socket, gameLight, roundEndTime, players } = useGameSocket();
+
+    // --- NEW: useEffect to handle socket connection status ---
+    useEffect(() => {
+      if (socket) {
+        // Function to run on connection
+        const onConnect = () => {
+          console.log("Connected to server.");
+          setIsLoading(false);
+        };
+
+        // Function to run on disconnection
+        const onDisconnect = () => {
+          console.log("Disconnected from server.");
+          setIsLoading(true);
+        };
+
+        // Check initial connection status
+        if (socket.connected) {
+          onConnect();
+        }
+
+        // Add event listeners
+        socket.on("connect", onConnect);
+        socket.on("disconnect", onDisconnect);
+
+        // Cleanup on component unmount
+        return () => {
+          socket.off("connect", onConnect);
+          socket.off("disconnect", onDisconnect);
+        };
+      }
+    }, [socket]);
+
 
     //video feed
     useEffect(() => {
@@ -76,7 +111,7 @@ export default function App() {
         if (walking && gameLight === "RED") {
           setGameOver(true);
         }
-      }, 500);
+      }, 600);
       return () => clearTimeout(timeout);
     }
   }, [gameLight, walking, gameOver]);
@@ -90,13 +125,13 @@ export default function App() {
         setPos((prevPos) => {
           const nextPos = Math.min(prevPos + 0.8, 100);
           if (nextPos >= 100 && !hasEmitted) {
-            hasEmitted = true; 
+            hasEmitted = true;
             setFinished(true);
             const finishTime = Date.now() - startTime;
             if (socket && playerName) {
-               saveScore(playerName, finishTime).then(() => {
+              saveScore(playerName, finishTime).then(() => {
               getTop5().then(setLeaderboard);
-               });
+              });
             }
           }
           return nextPos;
@@ -124,89 +159,100 @@ export default function App() {
     }
   }, [pos, socket]);
 
-
-  return (
-    <>
-    {showWelcome && (
-      <WelcomeOverlay
-        socket={socket}
-        onSubmit={() => setShowWelcome(false)}
-      />
-    )}
-    <div className={`app app-${gameLight}`}>
-
-
-      <main className="main">
-        <TrackSection pos={pos} gameOver={gameOver} finished={finished} players={players} mySocketId={socket?.id} />
-      </main>
-
-
-      <footer className="bottombar">
-
-        <div className="container">
-          <div className = "images">
-          {/* <img className = "logo" src = "image.png" alt = "icg logo"></img> */}
-          <img className = "titleImg" src = "Red.png" alt = "title logo"></img>
+    // --- NEW: Conditional rendering for the loading screen ---
+    if (isLoading) {
+      return (
+        <div className="loading-screen">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <h2>Connecting to server...</h2>
+            <p>Establishing connection to game server</p>
           </div>
-          <div className = "info">
-            <div className="timer">
-              <h3> Time Left </h3>
-              <h3>{timeLeft}</h3>
+        </div>
+      );
+    }
+
+    return (
+      <>
+      {showWelcome && (
+        <WelcomeOverlay
+          socket={socket}
+          onSubmit={() => setShowWelcome(false)}
+        />
+      )}
+      <div className={`app app-${gameLight}`}>
+
+
+        <main className="main">
+          <TrackSection pos={pos} gameOver={gameOver} finished={finished} players={players} mySocketId={socket?.id} />
+        </main>
+
+
+        <footer className="bottombar">
+
+          <div className="container">
+            <div className = "images">
+            {/* <img className = "logo" src = "image.png" alt = "icg logo"></img> */}
+            <img className = "titleImg" src = "Red.png" alt = "title logo"></img>
             </div>
+            <div className = "info">
+              <div className="timer">
+                <h3> Time Left </h3>
+                <h3>{timeLeft}</h3>
+              </div>
 
-            <div className = "finishers">
-              {/* <h3>Leaderboard</h3> */}
-              <ul>
-                {leaderboard.map((entry, idx) => (
-                  <li key={idx}>
-                    <span className="finisher-no">{idx + 1}</span>
-                    <span className="finisher-name">{entry.player_name}</span>
-                    <span className="finisher-time">{(entry.time_ms / 1000).toFixed(2)} s</span>
-                  </li>
-                ))}
-              </ul>
+              <div className = "finishers">
+                {/* <h3>Leaderboard</h3> */}
+                <ul>
+                  {leaderboard.map((entry, idx) => (
+                    <li key={idx}>
+                      <span className="finisher-no">{idx + 1}</span>
+                      <span className="finisher-name">{entry.player_name}</span>
+                      <span className="finisher-time">{(entry.time_ms / 1000).toFixed(2)} s</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
 
 
-        <div className="io-panel">
-          <div className="cam">
-            <video ref={videoRef} autoPlay playsInline muted />
-            <canvas
-              ref={canvasRef}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                pointerEvents: "none",
-                width: "100%",
-                height: "100%",
-              }}
-            />
-            <div className="cam-label">webcam</div>
+          <div className="io-panel">
+            <div className="cam">
+              <video ref={videoRef} autoPlay playsInline muted />
+              <canvas
+                ref={canvasRef}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  pointerEvents: "none",
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+              <div className="cam-label">webcam</div>
+            </div>
           </div>
-        </div>
-        <div className ="io-panel mediapipe-section">
-          <h3> Detected Symbol</h3>
-          <div className="emoji">{walking ? "🖐️" : "✊"}</div>
-          <table>
-            <tbody>
-              <tr>
-                <td>Input method</td>
-                <td>{walking ? "Walk": "Still"}</td>
-              </tr>
-              <tr>
-                <td>Confidence Score</td>
-                <td>{confidence}</td>
-              </tr>
-            </tbody>
-          </table>
-          
-        </div>
-      </footer>
-    </div>
-    </>
-  );
-}
+          <div className ="io-panel mediapipe-section">
+            <h3> Detected Symbol</h3>
+            <div className="emoji">{walking ? "🖐️" : "✊"}</div>
+            <table>
+              <tbody>
+                <tr>
+                  <td>Input method</td>
+                  <td>{walking ? "Walk": "Still"}</td>
+                </tr>
+                <tr>
+                  <td>Confidence Score</td>
+                  <td>{confidence}</td>
+                </tr>
+              </tbody>
+            </table>
 
+          </div>
+        </footer>
+      </div>
+      </>
+    );
+  }
